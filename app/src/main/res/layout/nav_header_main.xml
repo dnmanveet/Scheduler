@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/nav_header_height"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:background="#2196F3"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+
+        android:padding="45dp"
+        android:paddingLeft="10dp"
+        android:theme="@style/ThemeOverlay.AppCompat.Light">
+
+        <ImageView
+            android:id="@+id/imageView"
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            app:srcCompat="@drawable/baseline_home" />
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingTop="31dp"
+                android:text="Home"
+                android:textAppearance="@style/TextAppearance.AppCompat.Body1"
+                android:textColor="#ffff"
+                android:textSize="25dp" />
+        </LinearLayout>
+
+
+
+
+    </LinearLayout>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginStart="46dp"
+        android:layout_marginTop="131dp"
+        android:text="An Organised Way of doing Things"
+        android:textColor="#ffffff"
+        android:textSize="12dp" />
+
+    <!--<Switch-->
+        <!--android:id="@+id/switch1"-->
+        <!--android:layout_width="wrap_content"-->
+        <!--android:layout_height="wrap_content"-->
+        <!--android:layout_alignParentEnd="true"-->
+        <!--android:layout_alignParentTop="true"-->
+        <!--android:layout_marginEnd="16dp"-->
+        <!--android:layout_marginTop="24dp"-->
+        <!--android:layout_weight="1"-->
+        <!--android:text="Backup and Sync off"-->
+        <!--android:textColor="#fff" />-->
+</RelativeLayout>
