@@ -771,7 +771,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         // Build notification
         // Actions are just fake
 
-        Notification noti = new Notification.Builder(MainActivity.this).setContentTitle("No tasks today" + "    " + strDate + " " + curTime).setContentText("Enjoy Your day..").setLights(Color.WHITE, 2000, 3000).setSmallIcon(R.mipmap.my).setContentIntent(pIntent).setAutoCancel(true).setSound(alarmSound).addAction(R.drawable.baseline_add, "And Task", pIntent).build();
+        Notification noti = new Notification.Builder(MainActivity.this).setContentTitle("No tasks today" + "    " + strDate + " " + curTime).setContentText("Enjoy Your day..").setLights(Color.WHITE, 2000, 3000).setSmallIcon(R.mipmap.my).setContentIntent(pIntent).setAutoCancel(true).setSound(alarmSound).addAction(R.drawable.baseline_add, "Add Task", pIntent).build();
         NotificationManager notificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
         notificationManager.notify(0, noti);
     }

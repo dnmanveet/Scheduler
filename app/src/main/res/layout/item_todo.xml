@@ -10,7 +10,7 @@
         android:id="@+id/task_title"
         android:text="Hi"
         android:textColor="#000"
-        android:textSize = "16dp"
+        android:textSize = "18dp"
         android:paddingLeft="7dp"
         android:paddingTop="4dp"
         />
