@@ -1,6 +1,8 @@
 package nl.kleisauke.compactcalendarviewtoolbar;
 
+import android.Manifest;
 import android.annotation.TargetApi;
+import android.app.Activity;
 import android.app.AlarmManager;
 import android.app.Dialog;
 import android.app.Notification;
@@ -11,20 +13,24 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.media.RingtoneManager;
 import android.net.Uri;
+import android.nfc.Tag;
 import android.os.Build;
 import android.os.Bundle;
+import android.provider.ContactsContract;
 import android.speech.RecognizerIntent;
 import android.support.annotation.NonNull;
 import android.support.design.widget.AppBarLayout;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.NavigationView;
 import android.support.design.widget.Snackbar;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.view.MenuItemCompat;
@@ -56,6 +62,11 @@ import android.widget.Toast;
 import android.widget.ToggleButton;
 
 import com.github.sundeepk.compactcalendarview.CompactCalendarView;
+import com.google.android.gms.auth.api.Auth;
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
+import com.google.android.gms.auth.api.signin.GoogleSignInResult;
+import com.google.android.gms.common.SignInButton;
+import com.google.android.gms.common.api.GoogleApiClient;
 
 import org.w3c.dom.Text;
 
@@ -64,7 +75,6 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
-import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Locale;
 import java.util.TimeZone;
@@ -76,8 +86,9 @@ import static android.widget.Toast.LENGTH_SHORT;
 
 
 
-public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
+public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener{
 
+    private static final int RC_SIGN_IN = 9001;
     private AppBarLayout appBarLayout;
 
     private final SimpleDateFormat dateFormat = new SimpleDateFormat("d MMMM yyyy", /*Locale.getDefault()*/Locale.ENGLISH);
@@ -99,6 +110,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     private String g, h;
     private EditText TaskTime;
     private String task5;
+    private int isStrike;
+    private int quanti =0;
 
     ArrayList<TaskItem> taskItemList = new ArrayList<>();
 
@@ -115,6 +128,22 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+
+        Calendar cal = Calendar.getInstance();
+
+        cal.setTimeInMillis(System.currentTimeMillis());
+        cal.clear();
+        cal.set(2018,8,25,21,51);
+
+        AlarmManager alarmMgr = (AlarmManager)getSystemService(Context.ALARM_SERVICE);
+        Intent intent = new Intent(this, MyReceiver.class);
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(this, 0, intent, 0);
+        // cal.add(Calendar.SECOND, 5);
+        alarmMgr.set(AlarmManager.RTC_WAKEUP, cal.getTimeInMillis(), pendingIntent);
+
+
+
         TextView t = (TextView) findViewById(R.id.tt);
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -156,7 +185,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 TaskTime = new EditText(MainActivity.this);
                 TaskTime.setHint("date and time");
                 TaskTime.setVisibility(View.VISIBLE);
-                TaskTime.setText("Reminder not set");
+                TaskTime.setText("Click this to add due date");
                 LinearLayout layout = new LinearLayout(getApplicationContext());
                 layout.setOrientation(LinearLayout.VERTICAL);
                 LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
@@ -164,6 +193,33 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 params.setMargins(50, 0, 50, 0);
                 layout.addView(taskEditText,params);
                 layout.addView(TaskTime,params);
+
+                TaskTime.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+
+                        new CustomDateTimePicker(MainActivity.this, new CustomDateTimePicker.ICustomDateTimeListener() {
+                            @Override
+                            public void onSet(Dialog dialog, Calendar calendarSelected, Date dateSelected, int year, String monthFullName, String monthShortName, int monthNumber, int date, String weekDayFullName, String weekDayShortName, int hour24, int hour12, int min, int sec, String AM_PM) {
+                                TaskTime.setVisibility(View.VISIBLE);
+                                TaskTime.setTextColor(Color.BLACK);
+                                dat = String.valueOf(date) + " " + monthShortName + " " + String.valueOf(year);
+                                tim = String.valueOf(hour12) + ":" + String.valueOf(min);
+                                task5 = "Date : " + dat + " " + "Time : " + tim + AM_PM;
+                                TaskTime.setText(task5);
+                                Taskdialog.show();
+
+                            }
+
+                            @Override
+                            public void onCancel() {
+                                Taskdialog.show();
+
+                            }
+                        }).set24HourFormat(true).setDate(Calendar.getInstance()).showDialog();
+
+                    }
+                });
 
 
 
@@ -175,11 +231,10 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                         if(TaskTime.getText().toString() != null || TaskTime.getText().toString() != ""){
                             TaskTime.setVisibility(View.VISIBLE);
 
-
                         }
                         else if(TaskTime.getText().toString() == null || TaskTime.getText().toString() == ""){
                             TaskTime.setVisibility(View.VISIBLE);
-                            TaskTime.setText("Reminder not set");
+                            TaskTime.setText("Click this to add due date");
 
                         }
                         if (taskItemList.contains(task)) {
@@ -208,6 +263,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                             SQLiteDatabase db = mHelper.getWritableDatabase();
                             taskItemList.add(new TaskItem(task,TaskTime.getText().toString()));
                             adapter.add(taskItemList.get(taskItemList.size() - 1));
+                            TaskNotification();
                             TaskItem item = taskItemList.get(taskItemList.size() - 1); //adapter.getItem(0);
                             adapter.notifyDataSetChanged();
                             mCartItemCount = adapter.getCount();
@@ -215,7 +271,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                             ContentValues values = new ContentValues();
                             if (TaskTime.getText().toString() == null || TaskTime.getText().toString() == "") {
                                 TaskTime.setVisibility(View.VISIBLE);
-                                TaskTime.setText("Reminder not set");
+                                TaskTime.setText("Click this to add due date");
                                 values.put(Task.TaskEntry.COL_TASK_TITLE, task);
                                 values.put(Task.TaskEntry.COL_TASK_DATE, TaskTime.getText().toString());
                             }
@@ -224,11 +280,12 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                                 values.put(Task.TaskEntry.COL_TASK_DATE, TaskTime.getText().toString());
                             }
                             db.insertWithOnConflict(Task.TaskEntry.TABLE, null, values, SQLiteDatabase.CONFLICT_REPLACE);
+                            TaskNotification();
                             db.close();
                             updateUI();
                         }
                     }
-                }).setNegativeButton("Cancel", null).setNeutralButton("Add Reminder", new DialogInterface.OnClickListener() {
+                }).setNegativeButton("Cancel", null).setNeutralButton("Add Due Date", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
                         new CustomDateTimePicker(MainActivity.this, new CustomDateTimePicker.ICustomDateTimeListener() {
@@ -240,13 +297,13 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                                 tim = String.valueOf(hour12) + ":" + String.valueOf(min);
                                 task5 = "Date : " + dat + " " + "Time : " + tim + AM_PM;
                                 TaskTime.setText(task5);
+                                TaskTime.setEnabled(false);
                                 Taskdialog.show();
+
                             }
 
                             @Override
                             public void onCancel() {
-                                TaskTime.setText(null);
-                                TaskTime.setVisibility(View.INVISIBLE);
                                 Taskdialog.show();
 
                             }
@@ -269,11 +326,151 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-
                 TextView text = view.findViewById(R.id.task_title);
-                text.setBackgroundColor(Color.WHITE);
-                text.setPaintFlags(text.getPaintFlags() & (~Paint.STRIKE_THRU_TEXT_FLAG));
-                adapter.notifyDataSetChanged();
+                TextView time = view.findViewById(R.id.timer);
+
+
+                Taskdialog = new AlertDialog.Builder(MainActivity.this, R.style.MyAlertDialogStyle).setTitle(text.getText().toString()).setMessage(time.getText().toString()).setIcon(R.drawable.round_insert).setPositiveButton("Edit", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogue, int which) {
+
+                        if(isStrike != 0) {
+                            text.setBackgroundColor(Color.WHITE);
+                            text.setPaintFlags(text.getPaintFlags() & (~Paint.STRIKE_THRU_TEXT_FLAG));
+                            adapter.notifyDataSetChanged();
+                            isStrike = 0;
+                        }
+                        else{
+
+                            final EditText taskEditText = new EditText(MainActivity.this);
+                            taskEditText.setText(text.getText().toString());
+                            taskEditText.setHint("Type task");
+                            TaskTime = new EditText(MainActivity.this);
+                            TaskTime.setHint("date and time");
+                            TaskTime.setVisibility(View.VISIBLE);
+                            TaskTime.setText("Click this to add due date");
+                            LinearLayout layout = new LinearLayout(getApplicationContext());
+                            layout.setOrientation(LinearLayout.VERTICAL);
+                            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                                    LinearLayout.LayoutParams.FILL_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+                            params.setMargins(50, 0, 50, 0);
+                            layout.addView(taskEditText,params);
+                            layout.addView(TaskTime,params);
+
+                            Taskdialog = new AlertDialog.Builder(MainActivity.this, R.style.MyAlertDialogStyle).setTitle("Edit Task").setMessage("Edit as per required").setIcon(R.drawable.pen).setView(layout).setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialogue, int which) {
+                                    taskEditText.requestFocus();
+                                    task = String.valueOf(taskEditText.getText());
+                                    if(TaskTime.getText().toString() != null || TaskTime.getText().toString() != ""){
+                                        TaskTime.setVisibility(View.VISIBLE);
+
+                                    }
+                                    else if(TaskTime.getText().toString() == null || TaskTime.getText().toString() == ""){
+                                        TaskTime.setVisibility(View.VISIBLE);
+                                        TaskTime.setText("Click this to add due date");
+
+                                    }
+                                    if (taskItemList.contains(task)) {
+                                        View parentLayout = findViewById(android.R.id.content);
+                                        Snackbar.make(parentLayout, "Already Added..", Snackbar.LENGTH_LONG)
+                                                .setAction("CLOSE", new View.OnClickListener() {
+                                                    @Override
+                                                    public void onClick(View view) {
+
+                                                    }
+                                                })
+                                                .setActionTextColor(getResources().getColor(android.R.color.holo_blue_bright))
+                                                .show();
+                                    } else if (task == null || task.trim().equals("")) {
+                                        View parentLayout = findViewById(android.R.id.content);
+                                        Snackbar.make(parentLayout, "Add task..", Snackbar.LENGTH_LONG)
+                                                .setAction("CLOSE", new View.OnClickListener() {
+                                                    @Override
+                                                    public void onClick(View view) {
+
+                                                    }
+                                                })
+                                                .setActionTextColor(getResources().getColor(android.R.color.holo_blue_bright))
+                                                .show();
+                                    } else {
+                                        SQLiteDatabase db = mHelper.getWritableDatabase();
+//                                taskItemList.add(new TaskItem(task,TaskTime.getText().toString()));
+//                                adapter.add(taskItemList.get(position));
+                                        TaskItem taskItem = adapter.getItem(position);
+                                        taskItemList.remove(taskItem);
+                                        adapter.remove(taskItem);
+                                        db.delete(Task.TaskEntry.TABLE, Task.TaskEntry.COL_TASK_TITLE + " = ?", new String[]{taskItem.getTaskString()});
+                                        taskItemList.add(position,new TaskItem(taskEditText.getText().toString(),TaskTime.getText().toString()));
+                                        TaskItem item = taskItemList.get(taskItemList.size() - 1); //adapter.getItem(0);
+                                        adapter.notifyDataSetChanged();
+                                        mCartItemCount = adapter.getCount();
+                                        ContentValues values = new ContentValues();
+                                        if (TaskTime.getText().toString() == null || TaskTime.getText().toString() == "") {
+                                            TaskTime.setVisibility(View.VISIBLE);
+                                            TaskTime.setText("Click this to add due date");
+                                            values.put(Task.TaskEntry.COL_TASK_TITLE, taskEditText.getText().toString());
+                                            values.put(Task.TaskEntry.COL_TASK_DATE, TaskTime.getText().toString());
+                                        }
+                                        else {
+                                            values.put(Task.TaskEntry.COL_TASK_TITLE, taskEditText.getText().toString());
+                                            values.put(Task.TaskEntry.COL_TASK_DATE, TaskTime.getText().toString());
+                                        }
+                                        db.insertWithOnConflict(Task.TaskEntry.TABLE, null, values, SQLiteDatabase.CONFLICT_REPLACE);
+                                        mCartItemCount++;
+                                        setupBadge();
+                                        db.close();
+                                        updateUI();
+                                    }
+                                }
+                            }).setNegativeButton("Cancel", null).setNeutralButton("Add Due Date", new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    new CustomDateTimePicker(MainActivity.this, new CustomDateTimePicker.ICustomDateTimeListener() {
+                                        @Override
+                                        public void onSet(Dialog dialog, Calendar calendarSelected, Date dateSelected, int year, String monthFullName, String monthShortName, int monthNumber, int date, String weekDayFullName, String weekDayShortName, int hour24, int hour12, int min, int sec, String AM_PM) {
+                                            TaskTime.setVisibility(View.VISIBLE);
+                                            TaskTime.setTextColor(Color.BLACK);
+                                            dat = String.valueOf(date) + " " + monthShortName + " " + String.valueOf(year);
+                                            tim = String.valueOf(hour12) + ":" + String.valueOf(min);
+                                            task5 = "Date : " + dat + " " + "Time : " + tim + AM_PM;
+                                            TaskTime.setText(task5);
+                                            TaskTime.setEnabled(false);
+                                            Taskdialog.show();
+
+                                        }
+
+                                        @Override
+                                        public void onCancel() {
+                                            Taskdialog.show();
+
+                                        }
+                                    }).set24HourFormat(true).setDate(Calendar.getInstance()).showDialog();
+                                }
+                            }).create();
+                            Taskdialog.show();
+
+                        }
+
+                    }
+
+                }).setNegativeButton("Share", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        String s = "Task : "+ text.getText().toString() + "\n"+"Due : "+ time.getText().toString() ;
+                        Intent sharingIntent = new Intent(android.content.Intent.ACTION_SEND);
+                        sharingIntent.setType("text/plain");
+                        sharingIntent.putExtra(android.content.Intent.EXTRA_SUBJECT, "Subject Here");
+                        sharingIntent.putExtra(android.content.Intent.EXTRA_TEXT, s);
+                        startActivity(Intent.createChooser(sharingIntent, "Share text via"));
+
+                    }
+                }).setNeutralButton("Cancel", null).create();
+                Taskdialog.show();
+
+
+
+
             }
         });
 
@@ -290,23 +487,30 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                     View parent = (View) listView.getParent();
                     TextView taskTextView = (TextView) parent.findViewById(R.id.task_title);
                     TaskItem taskItem = adapter.getItem(position);
-                    taskItemList.remove(taskItem);
-                    adapter.remove(taskItem);
-                    SQLiteDatabase db = mHelper.getWritableDatabase();
-                    db.delete(Task.TaskEntry.TABLE, Task.TaskEntry.COL_TASK_TITLE + " = ?", new String[]{taskItem.getTaskString()});
-                    db.close();
-                    updateUI();
                     View parentLayout = findViewById(android.R.id.content);
                     mCartItemCount = adapter.getCount();
                     Snackbar.make(parentLayout, "'" + taskItem.getTaskString() + "'" + " Task deleted.. ", Snackbar.LENGTH_SHORT)
-                            .setAction("CLOSE", new View.OnClickListener() {
+                            .setAction("UNDO", new View.OnClickListener() {
                                 @Override
                                 public void onClick(View view) {
-
+                                      Toast.makeText(MainActivity.this,"hii",Toast.LENGTH_LONG).show();
+                                      quanti = 1;
                                 }
                             })
                             .setActionTextColor(getResources().getColor(android.R.color.holo_blue_bright))
                             .show();
+                    if(quanti == 1){
+                        Toast.makeText(MainActivity.this,"undo Test",Toast.LENGTH_LONG).show();
+                        quanti = 0;
+                    }
+                    else if(quanti == 0) {
+                        taskItemList.remove(taskItem);
+                        adapter.remove(taskItem);
+                        SQLiteDatabase db = mHelper.getWritableDatabase();
+                        db.delete(Task.TaskEntry.TABLE, Task.TaskEntry.COL_TASK_TITLE + " = ?", new String[]{taskItem.getTaskString()});
+                        db.close();
+                        updateUI();
+                    }
                     if (taskItemList.size() == 0 || taskItemList.size() < 0) {
                         ImageView empty = (ImageView) findViewById(R.id.empty1);
                         empty.setVisibility(View.VISIBLE);
@@ -337,9 +541,12 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             public boolean onItemLongClick(AdapterView<?> parent, View view, int i, long l) {
 
                 TextView text = view.findViewById(R.id.task_title);
+                TextView time = view.findViewById(R.id.timer);
                 text.setBackgroundColor(Color.CYAN);
+                time.setBackgroundColor(Color.CYAN);
+                isStrike = 1;
                 text.setPaintFlags(text.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
-                text.setBackgroundColor(Color.CYAN);
+                time.setPaintFlags(text.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
                 adapter.notifyDataSetChanged();
 
 
@@ -355,32 +562,30 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                             db.delete(Task.TaskEntry.TABLE, Task.TaskEntry.COL_TASK_TITLE + " = ?", new String[]{taskItem.getTaskString()});
                             db.close();
                             updateUI();
+
                             Toast.makeText(getApplicationContext(), "Task deleted.. ", Toast.LENGTH_LONG).show();
                             if (adapter.getCount() == 0) {
                                 ImageView empty = (ImageView) findViewById(R.id.empty1);
                                 empty.setVisibility(View.VISIBLE);
                                 list.setEmptyView(findViewById(R.id.empty1));
                                 EmptyNotification();
-                                mCartItemCount = taskItemList.size();
-                                View parent = (View) list.getParent();
-                                Snackbar.make(parent, "'" + taskItem.getTaskString() + "'" + " Task deleted.. ", Snackbar.LENGTH_SHORT)
-                                        .setAction("CLOSE", new View.OnClickListener() {
-                                            @Override
-                                            public void onClick(View view) {
+                            }
+                            mCartItemCount = taskItemList.size();
+                            View parent = (View) list.getParent();
+                            Snackbar.make(parent, "'" + taskItem.getTaskString() + "'" + " Task deleted.. ", Snackbar.LENGTH_SHORT).setAction("CLOSE", new View.OnClickListener() {
+                                @Override
+                                public void onClick(View view) {
+                                }
+                            }).setActionTextColor(getResources().getColor(android.R.color.holo_blue_bright)).show();
 
-                                            }
-                                        })
-                                        .setActionTextColor(getResources().getColor(android.R.color.holo_blue_bright))
-                                        .show();
-                                setupBadge();
-                            } else {
+                            setupBadge();
+                        } else {
                                 ImageView empty = (ImageView) findViewById(R.id.empty1);
                                 empty.setVisibility(View.INVISIBLE);
                                 list.setAdapter(adapter);
                                 TaskNotification();
                                 mCartItemCount = taskItemList.size();;
                                 setupBadge();
-                            }
                         }
                         if (quantity == 0) {
                             taskItemList.remove(adapter.getItem(i));
@@ -416,8 +621,16 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                         .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialog, int which) {
-//                                text2.setBackgroundColor(Color.WHITE);
-//                                text2.setPaintFlags(text2.getPaintFlags() & (~Paint.STRIKE_THRU_TEXT_FLAG));
+                                TextView text = view.findViewById(R.id.task_title);
+                                TextView time = view.findViewById(R.id.timer);
+                                text.setBackgroundColor(Color.WHITE);
+                                time.setBackgroundColor(Color.WHITE);
+
+                                isStrike = 0;
+                                text.setPaintFlags(text.getPaintFlags() & (~Paint.STRIKE_THRU_TEXT_FLAG));
+                                time.setPaintFlags(text.getPaintFlags() & (~Paint.STRIKE_THRU_TEXT_FLAG));
+
+                                adapter.notifyDataSetChanged();
 
                             }
                         }).create();
@@ -441,9 +654,9 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
         compactCalendarView.setShouldDrawDaysHeader(true);
 
-//        compactCalendarView.setListener(new CompactCalendarView.CompactCalendarViewListener() {
-//            @Override
-//            public void onDayClick(Date dateClicked) {
+        compactCalendarView.setListener(new CompactCalendarView.CompactCalendarViewListener() {
+            @Override
+            public void onDayClick(Date dateClicked) {
 //                Calendar cl = Calendar.getInstance();
 //                String year = String.valueOf(cl.get(Calendar.YEAR));
 //                String mon = String.valueOf(cl.get(Calendar.MONTH));
@@ -478,15 +691,15 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 //                }
 //
 //
-//            }
+            }
 //
 //
-//            @Override
-//            public void onMonthScroll(Date firstDayOfNewMonth) {
-//                setSubtitle(dateFormat.format(firstDayOfNewMonth));
-//
-//            }
-//        });
+            @Override
+            public void onMonthScroll(Date firstDayOfNewMonth) {
+                setSubtitle(dateFormat.format(firstDayOfNewMonth));
+
+            }
+        });
 
         // Set current date to today
         setCurrentDate(new Date());
@@ -504,6 +717,118 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         });
 
 //        updateUI();
+
+
+//        Edit.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                v.findViewById(R.id.task_title);
+//
+//                final EditText taskEditText = new EditText(MainActivity.this);
+//                taskEditText.setText(v.findViewById(R.id.task_title));
+//                taskEditText.setHint("Type task");
+//                TaskTime = new EditText(MainActivity.this);
+//                TaskTime.setHint("date and time");
+//                TaskTime.setVisibility(View.VISIBLE);
+//                TaskTime.setText("Click this to add due date");
+//                LinearLayout layout = new LinearLayout(getApplicationContext());
+//                layout.setOrientation(LinearLayout.VERTICAL);
+//                LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+//                        LinearLayout.LayoutParams.FILL_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+//                params.setMargins(50, 0, 50, 0);
+//                layout.addView(taskEditText,params);
+//                layout.addView(TaskTime,params);
+//
+//
+//
+//                Taskdialog = new AlertDialog.Builder(MainActivity.this, R.style.MyAlertDialogStyle).setTitle("New Task").setMessage("Add a new task").setIcon(R.drawable.round_insert).setView(layout).setPositiveButton("Add", new DialogInterface.OnClickListener() {
+//                    @Override
+//                    public void onClick(DialogInterface dialogue, int which) {
+//                        taskEditText.requestFocus();
+//                        task = String.valueOf(taskEditText.getText());
+//                        if(TaskTime.getText().toString() != null || TaskTime.getText().toString() != ""){
+//                            TaskTime.setVisibility(View.VISIBLE);
+//
+//                        }
+//                        else if(TaskTime.getText().toString() == null || TaskTime.getText().toString() == ""){
+//                            TaskTime.setVisibility(View.VISIBLE);
+//                            TaskTime.setText("Click this to add due date");
+//
+//                        }
+//                        if (taskItemList.contains(task)) {
+//                            View parentLayout = findViewById(android.R.id.content);
+//                            Snackbar.make(parentLayout, "Already Added..", Snackbar.LENGTH_LONG)
+//                                    .setAction("CLOSE", new View.OnClickListener() {
+//                                        @Override
+//                                        public void onClick(View view) {
+//
+//                                        }
+//                                    })
+//                                    .setActionTextColor(getResources().getColor(android.R.color.holo_blue_bright))
+//                                    .show();
+//                        } else if (task == null || task.trim().equals("")) {
+//                            View parentLayout = findViewById(android.R.id.content);
+//                            Snackbar.make(parentLayout, "Add task..", Snackbar.LENGTH_LONG)
+//                                    .setAction("CLOSE", new View.OnClickListener() {
+//                                        @Override
+//                                        public void onClick(View view) {
+//
+//                                        }
+//                                    })
+//                                    .setActionTextColor(getResources().getColor(android.R.color.holo_blue_bright))
+//                                    .show();
+//                        } else {
+//                            SQLiteDatabase db = mHelper.getWritableDatabase();
+//                            taskItemList.add(new TaskItem(task,TaskTime.getText().toString()));
+//                            adapter.add(taskItemList.get(taskItemList.size() - 1));
+//                            TaskItem item = taskItemList.get(taskItemList.size() - 1); //adapter.getItem(0);
+//                            adapter.notifyDataSetChanged();
+//                            mCartItemCount = adapter.getCount();
+//                            setupBadge();
+//                            ContentValues values = new ContentValues();
+//                            if (TaskTime.getText().toString() == null || TaskTime.getText().toString() == "") {
+//                                TaskTime.setVisibility(View.VISIBLE);
+//                                TaskTime.setText("Click this to add due date");
+//                                values.put(Task.TaskEntry.COL_TASK_TITLE, task);
+//                                values.put(Task.TaskEntry.COL_TASK_DATE, TaskTime.getText().toString());
+//                            }
+//                            else {
+//                                values.put(Task.TaskEntry.COL_TASK_TITLE, task);
+//                                values.put(Task.TaskEntry.COL_TASK_DATE, TaskTime.getText().toString());
+//                            }
+//                            db.insertWithOnConflict(Task.TaskEntry.TABLE, null, values, SQLiteDatabase.CONFLICT_REPLACE);
+//                            db.close();
+//                            updateUI();
+//                        }
+//                    }
+//                }).setNegativeButton("Cancel", null).setNeutralButton("Add Due Date", new DialogInterface.OnClickListener() {
+//                    @Override
+//                    public void onClick(DialogInterface dialog, int which) {
+//                        new CustomDateTimePicker(MainActivity.this, new CustomDateTimePicker.ICustomDateTimeListener() {
+//                            @Override
+//                            public void onSet(Dialog dialog, Calendar calendarSelected, Date dateSelected, int year, String monthFullName, String monthShortName, int monthNumber, int date, String weekDayFullName, String weekDayShortName, int hour24, int hour12, int min, int sec, String AM_PM) {
+//                                TaskTime.setVisibility(View.VISIBLE);
+//                                TaskTime.setTextColor(Color.BLACK);
+//                                dat = String.valueOf(date) + " " + monthShortName + " " + String.valueOf(year);
+//                                tim = String.valueOf(hour12) + ":" + String.valueOf(min);
+//                                task5 = "Date : " + dat + " " + "Time : " + tim + AM_PM;
+//                                TaskTime.setText(task5);
+//                                Taskdialog.show();
+//
+//                            }
+//
+//                            @Override
+//                            public void onCancel() {
+//                                Taskdialog.show();
+//
+//                            }
+//                        }).set24HourFormat(true).setDate(Calendar.getInstance()).showDialog();
+//                    }
+//                }).create();
+//                Taskdialog.show();
+//
+//            }
+//        });
     }
 
     private void updateUI() {
@@ -620,7 +945,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                     final EditText TaskTime = new EditText(MainActivity.this);
                     TaskTime.setHint("date");
                     TaskTime.setVisibility(View.VISIBLE);
-                    TaskTime.setText("Reminder not set");
+                    TaskTime.setText("Click this to add due date");
                     LinearLayout layout = new LinearLayout(getApplicationContext());
                     layout.setOrientation(LinearLayout.VERTICAL);
                     LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
@@ -629,10 +954,37 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                     layout.addView(taskEditText,params);
                     layout.addView(TaskTime,params);
 
+                    TaskTime.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+
+                            new CustomDateTimePicker(MainActivity.this, new CustomDateTimePicker.ICustomDateTimeListener() {
+                                @Override
+                                public void onSet(Dialog dialog, Calendar calendarSelected, Date dateSelected, int year, String monthFullName, String monthShortName, int monthNumber, int date, String weekDayFullName, String weekDayShortName, int hour24, int hour12, int min, int sec, String AM_PM) {
+                                    TaskTime.setVisibility(View.VISIBLE);
+                                    TaskTime.setTextColor(Color.BLACK);
+                                    dat = String.valueOf(date) + " " + monthShortName + " " + String.valueOf(year);
+                                    tim = String.valueOf(hour12) + ":" + String.valueOf(min);
+                                    task5 = "Date : " + dat + " " + "Time : " + tim + AM_PM;
+                                    TaskTime.setText(task5);
+                                    Taskdialog.show();
+
+                                }
+
+                                @Override
+                                public void onCancel() {
+                                    Taskdialog.show();
+
+                                }
+                            }).set24HourFormat(true).setDate(Calendar.getInstance()).showDialog();
+
+                        }
+                    });
+
 
                     Taskdialog = new AlertDialog.Builder(MainActivity.this,R.style.MyAlertDialogStyle)
                             .setTitle("Voice Task")
-                            .setMessage("Adding reminder is optional")
+                            .setMessage("Adding due date is optional")
                             .setIcon(R.drawable.round_mic)
                             .setView(layout)
                             .setPositiveButton("Add", new DialogInterface.OnClickListener() {
@@ -661,6 +1013,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                                                 null,
                                                 values,
                                                 SQLiteDatabase.CONFLICT_REPLACE);
+                                        TaskNotification();
                                         updateUI();
                                         db.close();
                                         mCartItemCount = adapter.getCount();
@@ -671,7 +1024,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                                 }
                             })
                             .setNegativeButton("Cancel", null)
-                            .setNeutralButton("Add Reminder", new DialogInterface.OnClickListener() {
+                            .setNeutralButton("Add Due Date", new DialogInterface.OnClickListener() {
                                 @Override
                                 public void onClick(DialogInterface dialog, int which) {
                                     new CustomDateTimePicker(MainActivity.this,
@@ -692,13 +1045,13 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                                                     tim = String.valueOf(hour12)+":" + String.valueOf(min);
                                                     task1 = "Date : "+dat+" "+"Time : "+tim+ AM_PM;
                                                     TaskTime.setText(task1);
+                                                    TaskTime.setEnabled(false);
                                                     Taskdialog.show();
 
                                                 }
 
                                                 @Override
                                                 public void onCancel() {
-                                                    TaskTime.setVisibility(View.INVISIBLE);
                                                     Taskdialog.show();
                                                 }
                                             }).set24HourFormat(true).setDate(Calendar.getInstance())
@@ -752,6 +1105,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     public void EmptyNotification() {
         // Prepare intent which is triggered if the
         // notification is selected
+        isNotiPermissionGranted();
         Uri alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
         Intent intent = new Intent(this, MainActivity.class);
 
@@ -773,6 +1127,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
         Notification noti = new Notification.Builder(MainActivity.this).setContentTitle("No tasks today" + "    " + strDate + " " + curTime).setContentText("Enjoy Your day..").setLights(Color.WHITE, 2000, 3000).setSmallIcon(R.mipmap.my).setContentIntent(pIntent).setAutoCancel(true).setSound(alarmSound).addAction(R.drawable.baseline_add, "Add Task", pIntent).build();
         NotificationManager notificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+        noti.flags = Notification.FLAG_ONLY_ALERT_ONCE;
         notificationManager.notify(0, noti);
     }
 
@@ -809,13 +1164,13 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             g = "";
             h = "Hurry up..";
         }
-        Notification noti = new Notification.Builder(MainActivity.this).setContentTitle(g + i + " Tasks today" + "    " + strDate + "    " + curTime).setContentText(h).setLights(Color.WHITE, 2000, 3000).setSmallIcon(R.mipmap.my).setContentIntent(pIntent).setAutoCancel(true)
+        Notification noti = new Notification.Builder(MainActivity.this).setContentTitle(g + i + " Tasks Remaining" + "    " + strDate + "    " + curTime).setContentText(h).setLights(Color.WHITE, 2000, 3000).setSmallIcon(R.mipmap.my).setContentIntent(pIntent)
 //                .setSound(alarmSound)
-                .addAction(R.drawable.baseline_add, "Add Task", pIntent).build();
+                .setOngoing(true).addAction(R.drawable.baseline_add, "Add Task", pIntent).build();
         NotificationManager notificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
         // hide the notification after its selected
 //      noti.flags |= Notification.FLAG_AUTO_CANCEL;
-        noti.flags = Notification.FLAG_ONLY_ALERT_ONCE;
+//        noti.flags = Notification.FLAG_ONLY_ALERT_ONCE;
 
         notificationManager.notify(0, noti);
 
@@ -945,23 +1300,45 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
     }
 
+    private boolean isNotiPermissionGranted() {
 
+        if (Build.VERSION.SDK_INT >= 23) {
+            if (this.checkSelfPermission(Manifest.permission.ACCESS_NOTIFICATION_POLICY)
+                    == PackageManager.PERMISSION_GRANTED) {
+                Log.v("MAina","Permission is granted");
+                return true;
+            } else {
+
+                Log.v("MAina","Permission is revoked");
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
+                return false;
+            }
+        }
+        else { //permission is automatically granted on sdk<23 upon installation
+            Log.v("Maina","Permission is granted");
+            return true;
+        }
+    }
    public void sortData(boolean asc) {
-       List<TaskItem> sortList = new ArrayList<TaskItem>();
-       if (adapter.getCount() == 0)
+       updateUI();
+       if (adapter.getCount() == 0){
            Toast.makeText(this, "List is Empty ..", Toast.LENGTH_SHORT).show();
+       updateUI();
+   }
        //SORT ARRAY ASCENDING AND DESCENDING
        else {
 //           if (asc) {
-//               Collections.sort(sortList);
+//               Collections.sort(TaskItem(adapter);
 //           }
 //           else {
-               Collections.reverse(taskItemList);
+//               Collections.reverse(adapter.getView());
+//           Collections.sort(list);
            }
 
-           list.setAdapter(new TaskAdapter(MainActivity.this, android.R.layout.simple_list_item_1, taskItemList));
+//           list.setAdapter(new TaskAdapter(MainActivity.this, R.layout.item_todo, taskItemList));
 
 //       }
+       updateUI();
    }
 
 @Override
@@ -974,8 +1351,8 @@ public boolean onNavigationItemSelected( MenuItem item1) {
         taskEditText.setHint("Type task");
         TaskTime = new EditText(MainActivity.this);
         TaskTime.setHint("date and time");
-        TaskTime.setText(null);
-        TaskTime.setVisibility(View.INVISIBLE);
+        TaskTime.setVisibility(View.VISIBLE);
+        TaskTime.setText("Click this to Add due date");
         LinearLayout layout = new LinearLayout(getApplicationContext());
         layout.setOrientation(LinearLayout.VERTICAL);
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
@@ -984,14 +1361,49 @@ public boolean onNavigationItemSelected( MenuItem item1) {
         layout.addView(taskEditText,params);
         layout.addView(TaskTime,params);
 
+        TaskTime.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                new CustomDateTimePicker(MainActivity.this, new CustomDateTimePicker.ICustomDateTimeListener() {
+                    @Override
+                    public void onSet(Dialog dialog, Calendar calendarSelected, Date dateSelected, int year, String monthFullName, String monthShortName, int monthNumber, int date, String weekDayFullName, String weekDayShortName, int hour24, int hour12, int min, int sec, String AM_PM) {
+                        TaskTime.setVisibility(View.VISIBLE);
+                        TaskTime.setTextColor(Color.BLACK);
+                        dat = String.valueOf(date) + " " + monthShortName + " " + String.valueOf(year);
+                        tim = String.valueOf(hour12) + ":" + String.valueOf(min);
+                        task5 = "Date : " + dat + " " + "Time : " + tim + AM_PM;
+                        TaskTime.setText(task5);
+                        Taskdialog.show();
+
+                    }
+
+                    @Override
+                    public void onCancel() {
+                        Taskdialog.show();
+
+                    }
+                }).set24HourFormat(true).setDate(Calendar.getInstance()).showDialog();
+
+            }
+        });
+
+
+
         Taskdialog = new AlertDialog.Builder(MainActivity.this, R.style.MyAlertDialogStyle).setTitle("New Task").setMessage("Add a new task").setIcon(R.drawable.round_insert).setView(layout).setPositiveButton("Add", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialogue, int which) {
-                TaskTime.setText("");
-                TaskTime.setText(null);
                 taskEditText.requestFocus();
                 task = String.valueOf(taskEditText.getText());
-                TaskTime.setText(null);
+                if(TaskTime.getText().toString() != null || TaskTime.getText().toString() != ""){
+                    TaskTime.setVisibility(View.VISIBLE);
+
+                }
+                else if(TaskTime.getText().toString() == null || TaskTime.getText().toString() == ""){
+                    TaskTime.setVisibility(View.VISIBLE);
+                    TaskTime.setText("Click this to Add due date");
+
+                }
                 if (taskItemList.contains(task)) {
                     View parentLayout = findViewById(android.R.id.content);
                     Snackbar.make(parentLayout, "Already Added..", Snackbar.LENGTH_LONG)
@@ -1015,24 +1427,32 @@ public boolean onNavigationItemSelected( MenuItem item1) {
                             .setActionTextColor(getResources().getColor(android.R.color.holo_blue_bright))
                             .show();
                 } else {
-                    TaskTime.setText(null);
                     SQLiteDatabase db = mHelper.getWritableDatabase();
-                    taskItemList.add(new TaskItem(task,task5));
+                    taskItemList.add(new TaskItem(task,TaskTime.getText().toString()));
                     adapter.add(taskItemList.get(taskItemList.size() - 1));
+                    TaskNotification();
                     TaskItem item = taskItemList.get(taskItemList.size() - 1); //adapter.getItem(0);
                     adapter.notifyDataSetChanged();
                     mCartItemCount = adapter.getCount();
                     setupBadge();
                     ContentValues values = new ContentValues();
-                    values.put(Task.TaskEntry.COL_TASK_TITLE, task);
-                    values.put(Task.TaskEntry.COL_TASK_DATE,task5);
+                    if (TaskTime.getText().toString() == null || TaskTime.getText().toString() == "") {
+                        TaskTime.setVisibility(View.VISIBLE);
+                        TaskTime.setText("Click this to Add due date");
+                        values.put(Task.TaskEntry.COL_TASK_TITLE, task);
+                        values.put(Task.TaskEntry.COL_TASK_DATE, TaskTime.getText().toString());
+                    }
+                    else {
+                        values.put(Task.TaskEntry.COL_TASK_TITLE, task);
+                        values.put(Task.TaskEntry.COL_TASK_DATE, TaskTime.getText().toString());
+                    }
                     db.insertWithOnConflict(Task.TaskEntry.TABLE, null, values, SQLiteDatabase.CONFLICT_REPLACE);
+                    TaskNotification();
                     db.close();
                     updateUI();
-                    TaskTime.setText("");
                 }
             }
-        }).setNegativeButton("Cancel", null).setNeutralButton("Add Reminder", new DialogInterface.OnClickListener() {
+        }).setNegativeButton("Cancel", null).setNeutralButton("Add Due Date", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 new CustomDateTimePicker(MainActivity.this, new CustomDateTimePicker.ICustomDateTimeListener() {
@@ -1044,13 +1464,13 @@ public boolean onNavigationItemSelected( MenuItem item1) {
                         tim = String.valueOf(hour12) + ":" + String.valueOf(min);
                         task5 = "Date : " + dat + " " + "Time : " + tim + AM_PM;
                         TaskTime.setText(task5);
+                        TaskTime.setEnabled(false);
                         Taskdialog.show();
+
                     }
 
                     @Override
                     public void onCancel() {
-                        TaskTime.setText(null);
-                        TaskTime.setVisibility(View.INVISIBLE);
                         Taskdialog.show();
 
                     }
@@ -1100,14 +1520,17 @@ public boolean onNavigationItemSelected( MenuItem item1) {
                         mCartItemCount = adapter.getCount();
                     } else {
                         ImageView empty = (ImageView) findViewById(R.id.empty1);
-                        empty.setVisibility(View.INVISIBLE);
+                        empty.setVisibility(View.VISIBLE);
+                        list.setEmptyView(findViewById(R.id.empty1));
                         list.setAdapter(adapter);
                         TaskNotification();
                         mCartItemCount = adapter.getCount();
-
                     }
                 } else {
                     adapter.clear();
+                    ImageView empty = (ImageView) findViewById(R.id.empty1);
+                    empty.setVisibility(View.VISIBLE);
+                    list.setEmptyView(findViewById(R.id.empty1));
                     db.delete(Task.TaskEntry.TABLE, null, null);
                     mCartItemCount = adapter.getCount();
                     setupBadge();
@@ -1122,13 +1545,11 @@ public boolean onNavigationItemSelected( MenuItem item1) {
                             .setActionTextColor(getResources().getColor(android.R.color.holo_blue_bright))
                             .show();
                     if (taskItemList.size() == 0 || taskItemList.size() < 0) {
-                        ImageView empty = (ImageView) findViewById(R.id.empty1);
                         empty.setVisibility(View.VISIBLE);
                         list.setEmptyView(findViewById(R.id.empty1));
                         EmptyNotification();
                         setupBadge();
                     } else {
-                        ImageView empty = (ImageView) findViewById(R.id.empty1);
                         empty.setVisibility(View.INVISIBLE);
                         list.setAdapter(adapter);
                         TaskNotification();
@@ -1140,7 +1561,12 @@ public boolean onNavigationItemSelected( MenuItem item1) {
         dialog.show();
         return true;
 
-    } else if (id == R.id.nav_exit) {
+    }
+    else if(id == R.id.scratchpad) {
+        Intent ip = new Intent(MainActivity.this,Scratch.class);
+        startActivity(ip)                                                          ;
+    }
+    else if (id == R.id.nav_exit) {
         AlertDialog dialog = new AlertDialog.Builder(MainActivity.this, R.style.MyAlertDialogStyle).setTitle("Exit Schedular ??").setIcon(R.drawable.icexit).setPositiveButton("Exit", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialogue, int which) {
@@ -1177,13 +1603,23 @@ public boolean onNavigationItemSelected( MenuItem item1) {
 }
 
 
-    public void click(View view) {
-        Intent notifyIntent = new Intent(this,MyReceiver.class);
-        Uri alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
-        PendingIntent pendingIntent = PendingIntent.getBroadcast
-                (MainActivity.this, 0, notifyIntent, PendingIntent.FLAG_UPDATE_CURRENT);
-        AlarmManager alarmManager = (AlarmManager) MainActivity.this.getSystemService(Context.ALARM_SERVICE);
-        alarmManager.setRepeating(AlarmManager.RTC_WAKEUP,  System.currentTimeMillis(),
-                1000 * 60 * 60 * 24, pendingIntent);
-    }
+//    public void click(View view) {
+//        Intent notifyIntent = new Intent(this,MyReceiver.class);
+//        Uri alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+//        PendingIntent pendingIntent = PendingIntent.getBroadcast
+//                (MainActivity.this, 0, notifyIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+//        AlarmManager alarmManager = (AlarmManager) MainActivity.this.getSystemService(Context.ALARM_SERVICE);
+//        alarmManager.setRepeating(AlarmManager.RTC_WAKEUP,  System.currentTimeMillis(),
+//                1000 * 60 * 60 * 24, pendingIntent);
+//    }
+//    public  void edittask(View v){
+//        v.findViewById(R.id.task_title);
+//        Toast.makeText(MainActivity.this,v.findViewById(R.id.task_title),Toast.LENGTH_LONG).show();
+//
+//    }
+
+
+
+
+
 }

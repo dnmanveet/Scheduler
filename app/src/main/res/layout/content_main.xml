@@ -10,8 +10,7 @@
 
 
 
-
-    <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
@@ -38,6 +37,7 @@
             android:layout_marginBottom="176dp"
             android:src="@drawable/screenshot"
             android:visibility="invisible" />
+            <!--android:background="#ddffffff"/>-->
 
         <android.support.design.widget.FloatingActionButton
             android:id="@+id/fab"
@@ -64,29 +64,24 @@
             android:layout_gravity="bottom|end"
             android:layout_marginBottom="30dp"
             android:layout_marginEnd="16dp"
-            app:srcCompat="@drawable/baseline_add" />
+            app:srcCompat="@drawable/baseline_add"
+            android:layout_alignParentRight="true"
+            android:layout_marginRight="16dp" />
 
         <!--<EditText-->
             <!--android:layout_width="match_parent"-->
             <!--android:layout_height="wrap_content"-->
             <!--android:layout_centerHorizontal="true"-->
             <!--android:layout_alignParentBottom="true" />-->
-        <Button
-            android:id="@+id/ged"
-            android:layout_width="wrap_content"
-            android:layout_height="45dp"
-            android:onClick="click"
-            android:text="click"
-            android:layout_marginTop="430dp"/>
-
+        <!--<Button-->
+            <!--android:id="@+id/ged"-->
+            <!--android:layout_width="wrap_content"-->
+            <!--android:layout_height="45dp"-->
+            <!--android:onClick="click"-->
+            <!--android:text="click"-->
+            <!--android:layout_marginTop="430dp"/>-->
 
     </RelativeLayout>
-
-
-
-
-
-
 
 </android.support.constraint.ConstraintLayout>
 

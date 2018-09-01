@@ -5,11 +5,12 @@
     android:layout_height="match_parent">
 
     <TextView
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:id="@+id/task_title"
         android:text="Hi"
         android:textColor="#000"
+        android:layout_marginRight="50dp"
         android:textSize = "18dp"
         android:paddingLeft="7dp"
         android:paddingTop="4dp"
@@ -21,9 +22,18 @@
         android:layout_height="wrap_content"
         android:layout_alignParentStart="true"
         android:layout_below="@+id/task_title"
-        android:text="afaffaffaafaffaa"
+        android:text="Time given by the user"
         android:paddingLeft="7dp"
         android:paddingBottom="4dp"/>
+
+    <ImageView
+        android:id="@+id/edit"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@+id/timer"
+        android:layout_alignParentEnd="true"
+        android:paddingBottom="8dp"
+        android:src="@drawable/edit" />
 
 
 
