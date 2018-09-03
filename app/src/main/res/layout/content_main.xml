@@ -9,13 +9,13 @@
     tools:showIn="@layout/app_bar_main">
 
 
-
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
-        tools:layout_editor_absoluteX="38dp"
-        tools:layout_editor_absoluteY="0dp">
+        tools:layout_editor_absoluteX="0dp"
+        tools:layout_editor_absoluteY="0dp"
+        tools:ignore="MissingConstraints">
 
 
         <TextView
@@ -37,7 +37,7 @@
             android:layout_marginBottom="176dp"
             android:src="@drawable/screenshot"
             android:visibility="invisible" />
-            <!--android:background="#ddffffff"/>-->
+        <!--android:background="#ddffffff"/>-->
 
         <android.support.design.widget.FloatingActionButton
             android:id="@+id/fab"
@@ -46,7 +46,7 @@
             android:layout_alignParentBottom="true"
             android:layout_alignStart="@+id/fab1"
             android:layout_gravity="bottom|end"
-            android:layout_marginBottom="112dp"
+            android:layout_marginBottom="154dp"
             app:srcCompat="@drawable/round_mic" />
 
         <TextView
@@ -62,24 +62,44 @@
             android:layout_alignParentBottom="true"
             android:layout_alignParentEnd="true"
             android:layout_gravity="bottom|end"
-            android:layout_marginBottom="30dp"
-            android:layout_marginEnd="16dp"
-            app:srcCompat="@drawable/baseline_add"
-            android:layout_alignParentRight="true"
-            android:layout_marginRight="16dp" />
+            android:layout_marginBottom="75dp"
+            android:layout_marginEnd="14dp"
+            app:srcCompat="@drawable/baseline_add" />
 
         <!--<EditText-->
-            <!--android:layout_width="match_parent"-->
-            <!--android:layout_height="wrap_content"-->
-            <!--android:layout_centerHorizontal="true"-->
-            <!--android:layout_alignParentBottom="true" />-->
+        <!--android:layout_width="match_parent"-->
+        <!--android:layout_height="wrap_content"-->
+        <!--android:layout_centerHorizontal="true"-->
+        <!--android:layout_alignParentBottom="true" />-->
         <!--<Button-->
             <!--android:id="@+id/ged"-->
             <!--android:layout_width="wrap_content"-->
             <!--android:layout_height="45dp"-->
+            <!--android:layout_marginTop="430dp"-->
             <!--android:onClick="click"-->
-            <!--android:text="click"-->
-            <!--android:layout_marginTop="430dp"/>-->
+            <!--android:text="click" />-->
+
+        <android.support.design.widget.TabLayout
+            android:id="@+id/simpleTabLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/colorAccent"
+            android:layout_alignParentBottom="true"
+            app:tabGravity="fill"
+            app:tabMode="fixed" />
+
+        <!--<android.support.v4.view.ViewPager-->
+            <!--xmlns:android="http://schemas.android.com/apk/res/android"-->
+            <!--android:id="@+id/pager"-->
+            <!--android:layout_width="match_parent"-->
+            <!--android:layout_height="match_parent">-->
+        <!--</android.support.v4.view.ViewPager>-->
+        <!--<android.support.v4.view.ViewPager-->
+            <!--android:id="@+id/simpleViewPager"-->
+            <!--android:layout_width="match_parent"-->
+            <!--android:layout_height="match_parent"-->
+            <!--app:layout_behavior="@string/appbar_scrolling_view_behavior" />-->
+
 
     </RelativeLayout>
 

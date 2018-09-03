@@ -2,6 +2,7 @@ package nl.kleisauke.compactcalendarviewtoolbar;
 
 import android.Manifest;
 import android.annotation.TargetApi;
+import android.app.ActionBar;
 import android.app.Activity;
 import android.app.AlarmManager;
 import android.app.Dialog;
@@ -23,6 +24,7 @@ import android.net.Uri;
 import android.nfc.Tag;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.provider.ContactsContract;
 import android.speech.RecognizerIntent;
 import android.support.annotation.NonNull;
@@ -30,11 +32,14 @@ import android.support.design.widget.AppBarLayout;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.NavigationView;
 import android.support.design.widget.Snackbar;
+import android.support.design.widget.TabLayout;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.view.MenuItemCompat;
+import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewCompat;
+import android.support.v4.view.ViewPager;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AlertDialog;
@@ -130,7 +135,60 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         setContentView(R.layout.activity_main);
 
 
-        Calendar cal = Calendar.getInstance();
+        TabLayout tabLayout = (TabLayout) findViewById(R.id.simpleTabLayout); // get the reference of TabLayout
+
+        TabLayout.Tab firstTab = tabLayout.newTab();// Create a new Tab names "First Tab"
+        TabLayout.Tab secondTab = tabLayout.newTab();
+        TabLayout.Tab thirdTab = tabLayout.newTab();
+        TabLayout.Tab fourthTab = tabLayout.newTab();
+
+
+        firstTab.setIcon(R.drawable.baseline_list);// set an icon for the first tab
+        secondTab.setIcon(R.drawable.bas);
+        thirdTab.setIcon(R.drawable.basel);
+        fourthTab.setIcon(R.drawable.ba);
+
+        tabLayout.addTab(firstTab,true);
+        tabLayout.addTab(secondTab);
+        tabLayout.addTab(thirdTab);
+        tabLayout.addTab(fourthTab);
+
+// addOnPageChangeListener event change the tab on slide
+
+        tabLayout.setOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
+                                               @Override
+                                               public void onTabSelected(TabLayout.Tab tab) {
+// get the current selected tab's position and replace the fragment accordingly
+
+                                                   switch (tab.getPosition()) {
+                                                       case 1:
+                                                           Intent ip = new Intent(MainActivity.this,Scratch.class);
+                                                           startActivity(ip);
+                                                           break;
+                                                       case 2:
+                                                           Intent ip1 = new Intent(MainActivity.this,notes.class);
+                                                           startActivity(ip1);
+                                                           break;
+                                                       case 3:
+                                                           Intent ip2 = new Intent(MainActivity.this,Images.class);
+                                                           startActivity(ip2);
+                                                           break;
+                                                   }
+                                               }
+
+                                               @Override
+                                               public void onTabUnselected(TabLayout.Tab tab) {
+
+                                               }
+
+                                               @Override
+                                               public void onTabReselected(TabLayout.Tab tab) {
+
+                                               }
+                                           });
+
+
+            Calendar cal = Calendar.getInstance();
 
         cal.setTimeInMillis(System.currentTimeMillis());
         cal.clear();
@@ -1310,7 +1368,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             } else {
 
                 Log.v("MAina","Permission is revoked");
-                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_NOTIFICATION_POLICY}, 1);
                 return false;
             }
         }
@@ -1319,6 +1377,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             return true;
         }
     }
+
    public void sortData(boolean asc) {
        updateUI();
        if (adapter.getCount() == 0){
@@ -1564,7 +1623,7 @@ public boolean onNavigationItemSelected( MenuItem item1) {
     }
     else if(id == R.id.scratchpad) {
         Intent ip = new Intent(MainActivity.this,Scratch.class);
-        startActivity(ip)                                                          ;
+        startActivity(ip);
     }
     else if (id == R.id.nav_exit) {
         AlertDialog dialog = new AlertDialog.Builder(MainActivity.this, R.style.MyAlertDialogStyle).setTitle("Exit Schedular ??").setIcon(R.drawable.icexit).setPositiveButton("Exit", new DialogInterface.OnClickListener() {
@@ -1603,6 +1662,8 @@ public boolean onNavigationItemSelected( MenuItem item1) {
 }
 
 
+
+
 //    public void click(View view) {
 //        Intent notifyIntent = new Intent(this,MyReceiver.class);
 //        Uri alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
@@ -1616,6 +1677,10 @@ public boolean onNavigationItemSelected( MenuItem item1) {
 //        v.findViewById(R.id.task_title);
 //        Toast.makeText(MainActivity.this,v.findViewById(R.id.task_title),Toast.LENGTH_LONG).show();
 //
+//    }
+//    public void click(View view){
+//        Intent ip = new Intent(this,Images.class);
+//        startActivity(ip);
 //    }
 
 

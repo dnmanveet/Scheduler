@@ -8,4 +8,8 @@
     <color name="textColorSecondary">@android:color/secondary_text_light</color>
     <color name="pressed_color">#4d90fe</color>
     <color name="default_color">#ffffff</color>
+    <color name="gray_bg">#e2e2e2</color>
+    <color name="selected">#8833B5E5</color>
+    <color name="text_color">#b9000000</color>
+    <color name="text_color_lighter">#9b000000</color>
 </resources>

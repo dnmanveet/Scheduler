@@ -48,6 +48,8 @@ dependencies {
     implementation 'com.google.firebase:firebase-auth:9.0.0'
     implementation 'com.google.android.gms:play-services-auth:9.0.0'
     implementation 'com.wdullaer:swipeactionadapter:2.0.0'
+    implementation 'com.itextpdf:itextg:5.5.10'
+
 
 
 }

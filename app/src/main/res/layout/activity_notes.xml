@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/notes_writing"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".notes">
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#DCDCDC"
+        android:orientation="vertical">
+
+        <EditText
+            android:id="@+id/TitleTextArea"
+            style="@style/Base.TextAppearance.AppCompat.Large"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            android:background="#fafafa"
+            android:ems="10"
+            android:enabled="true"
+            android:focusable="true"
+            android:gravity="top"
+            android:hint="Title"
+            android:inputType="textMultiLine"
+            android:isScrollContainer="true"
+            android:maxLines="4"
+            android:minLines="1"
+            android:padding="8dp"
+            android:textIsSelectable="true"
+            tools:layout_editor_absoluteY="1dp"
+            android:textStyle="bold"
+            android:textColorHint="@color/text_color_lighter"
+            android:textColor="@color/text_color"
+            android:fontFamily="sans-serif-black-small-caps"/>
+
+        <EditText
+            android:id="@+id/quoteTextArea"
+            style="@style/Base.TextAppearance.AppCompat.Large"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="#fafafa"
+            android:enabled="true"
+            android:focusable="true"
+            android:focusedByDefault="true"
+            android:gravity="top"
+            android:hint="Content"
+            android:textColorHint="@color/text_color_lighter"
+            android:textColor="@color/text_color"
+            android:inputType="textMultiLine"
+            android:isScrollContainer="true"
+            android:maxLines="100000000"
+            android:minLines="100"
+            android:padding="8dp"
+            android:layout_margin="8dp"
+            android:textIsSelectable="true"
+            android:fontFamily="sans-serif-black-small-caps" />
+    </LinearLayout>
+
+    <android.support.design.widget.FloatingActionButton
+        android:id="@+id/key"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentEnd="true"
+        android:layout_gravity="bottom|end"
+        android:layout_marginBottom="60dp"
+        android:layout_marginEnd="15dp"
+        android:src="@drawable/bas" />
+
+    <android.support.design.widget.FloatingActionButton
+        android:id="@+id/save"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_alignStart="@+id/key"
+        android:layout_gravity="bottom|end"
+        android:layout_marginBottom="141dp"
+        android:src="@drawable/baseline_save" />
+
+    <!--<android.support.design.widget.TabLayout-->
+        <!--android:id="@+id/simpleTabLayout"-->
+        <!--android:layout_width="match_parent"-->
+        <!--android:layout_height="wrap_content"-->
+        <!--android:layout_alignParentBottom="true"-->
+        <!--android:background="@color/colorAccent"-->
+        <!--app:tabGravity="fill"-->
+        <!--app:tabMode="fixed" />-->
+
+</RelativeLayout>
